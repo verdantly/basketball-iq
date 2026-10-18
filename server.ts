@@ -1,4 +1,5 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
+import type { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -141,7 +142,7 @@ If no drafted players are visible or if this is a blank screen, return an empty 
  */
 app.post('/api/ai/recommend', async (req: Request, res: Response) => {
   try {
-    const { userRoster = [], availablePlayers = [], puntedCategories = [], currentPickNumber = 1, leagueSize = 12 } = req.body;
+    const { userRoster = [], availablePlayers = [], puntedCategories = [], currentPickNumber = 1, leagueSize = 12, draftType = '3rr' } = req.body;
 
     const rosterSummary = userRoster.length > 0 
       ? userRoster.map((p: any) => `${p.name} (${p.positions.join('/')}) - PTS: ${p.stats.pts}, REB: ${p.stats.reb}, AST: ${p.stats.ast}, 3PM: ${p.stats.tpm}, STL: ${p.stats.stl}, BLK: ${p.stats.blk}, FG%: ${p.stats.fgPct}%, FT%: ${p.stats.ftPct}%, TO: ${p.stats.to}`).join('\n')
@@ -159,6 +160,7 @@ Roster Positions: PG, SG, G, SF, PF, F, C, C, Util, Util, BN, BN, BN.
 
 Current Draft Context:
 - Current overall pick number: ${currentPickNumber} in a ${leagueSize}-team league.
+- Draft order system: ${draftType === '3rr' ? '3rd Round Reversal (3RR - Round 3 reverses direction so the back of round 2 starts round 3)' : 'Standard Snake'}
 - Active punted categories: ${puntedCategories.length > 0 ? puntedCategories.join(', ') : 'None (Balanced Build)'}
 - User's current drafted roster:
 ${rosterSummary}

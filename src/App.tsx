@@ -37,6 +37,7 @@ export default function App() {
   const [allPlayers] = useState<Player[]>(INITIAL_PLAYERS);
   const [userSlot, setUserSlot] = useState<number>(4);
   const [leagueSize, setLeagueSize] = useState<number>(12);
+  const [draftType, setDraftType] = useState<'standard' | '3rr'>('3rr');
   const [currentPick, setCurrentPick] = useState<number>(1);
   const [draftHistory, setDraftHistory] = useState<DraftPick[]>([]);
   const [rosterSlots, setRosterSlots] = useState<YahooRosterSlot[]>(createInitialYahooRoster);
@@ -65,6 +66,8 @@ export default function App() {
         if (data.draftHistory) setDraftHistory(data.draftHistory);
         if (data.currentPick) setCurrentPick(data.currentPick);
         if (data.userSlot) setUserSlot(data.userSlot);
+        if (data.leagueSize) setLeagueSize(data.leagueSize);
+        if (data.draftType) setDraftType(data.draftType);
         if (data.punts) setPunts(data.punts);
         if (data.rosterSlots) setRosterSlots(data.rosterSlots);
       }
@@ -82,6 +85,8 @@ export default function App() {
           draftHistory,
           currentPick,
           userSlot,
+          leagueSize,
+          draftType,
           punts,
           rosterSlots,
         })
@@ -89,12 +94,42 @@ export default function App() {
     } catch (e) {
       console.warn('Failed to save draft state', e);
     }
-  }, [draftHistory, currentPick, userSlot, punts, rosterSlots]);
+  }, [draftHistory, currentPick, userSlot, leagueSize, draftType, punts, rosterSlots]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
+
+  // Helper function to get team on the clock for any given pick number
+  const getDraftingTeamForPick = (pickNum: number, numTeams: number, type: 'standard' | '3rr'): number => {
+    const round = Math.floor((pickNum - 1) / numTeams) + 1;
+    const posInRound = ((pickNum - 1) % numTeams) + 1;
+
+    let isReversed = false;
+    if (type === 'standard') {
+      isReversed = round % 2 === 0;
+    } else {
+      // 3rd Round Reversal (3RR):
+      // Round 1: 1 -> N (normal)
+      // Round 2: N -> 1 (reversed)
+      // Round 3+: odd rounds are reversed (N -> 1), even rounds are normal (1 -> N)
+      if (round === 1) {
+        isReversed = false;
+      } else if (round === 2) {
+        isReversed = true;
+      } else {
+        isReversed = round % 2 !== 0; // round 3, 5, 7... are reversed!
+      }
+    }
+
+    return isReversed ? numTeams - posInRound + 1 : posInRound;
+  };
+
+  // Determine which team is on the clock
+  const currentDraftingTeam = useMemo(() => {
+    return getDraftingTeamForPick(currentPick, leagueSize, draftType);
+  }, [currentPick, leagueSize, draftType]);
 
   // Set of drafted player IDs
   const draftedIds = useMemo(() => {
@@ -133,14 +168,6 @@ export default function App() {
   const teamStrengths = useMemo(() => {
     return calculateTeamCategoryStrengths(userRosterPlayers, punts);
   }, [userRosterPlayers, punts]);
-
-  // Determine which team is on the clock in a snake draft
-  const currentDraftingTeam = useMemo(() => {
-    const round = Math.floor((currentPick - 1) / leagueSize) + 1;
-    const isEvenRound = round % 2 === 0;
-    const posInRound = ((currentPick - 1) % leagueSize) + 1;
-    return isEvenRound ? leagueSize - posInRound + 1 : posInRound;
-  }, [currentPick, leagueSize]);
 
   const isUserTurn = currentDraftingTeam === userSlot;
 
@@ -350,7 +377,23 @@ export default function App() {
 
             <div className="flex items-center gap-2">
               <span className="text-slate-400 font-medium">League:</span>
-              <span className="text-slate-200 font-bold">12-Team Yahoo 9-Cat H2H</span>
+              <span className="text-slate-200 font-bold">12-Team Yahoo 9-Cat</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 font-medium">Order:</span>
+              <select
+                value={draftType}
+                onChange={e => {
+                  const val = e.target.value as 'standard' | '3rr';
+                  setDraftType(val);
+                  showToast(val === '3rr' ? '3rd Round Reversal (3RR) Active' : 'Standard Snake Active');
+                }}
+                className="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-xs text-amber-300 focus:outline-none focus:border-amber-500 font-bold"
+              >
+                <option value="3rr">3rd Round Reversal (3RR)</option>
+                <option value="standard">Standard Snake</option>
+              </select>
             </div>
           </div>
 
@@ -579,6 +622,7 @@ export default function App() {
             totalTeams={leagueSize}
             userSlot={userSlot}
             currentPick={currentPick}
+            draftType={draftType}
             draftHistory={draftHistory}
             allPlayers={allPlayers}
             onInspectPlayer={p => setInspectingPlayer(p)}
@@ -593,6 +637,7 @@ export default function App() {
             punts={punts}
             currentPick={currentPick}
             leagueSize={leagueSize}
+            draftType={draftType}
             onDraftPlayer={handleDraftToUser}
             comparedPlayers={comparedPlayers}
             onClearCompare={() => setComparedPlayers([])}

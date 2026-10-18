@@ -5,6 +5,7 @@ interface DraftGridProps {
   totalTeams: number;
   userSlot: number;
   currentPick: number;
+  draftType?: 'standard' | '3rr';
   draftHistory: DraftPick[];
   allPlayers: Player[];
   onInspectPlayer: (player: Player) => void;
@@ -14,6 +15,7 @@ export const DraftGrid: React.FC<DraftGridProps> = ({
   totalTeams = 12,
   userSlot = 4,
   currentPick,
+  draftType = '3rr',
   draftHistory,
   allPlayers,
   onInspectPlayer,
@@ -70,19 +72,27 @@ export const DraftGrid: React.FC<DraftGridProps> = ({
           </thead>
           <tbody className="divide-y divide-slate-800/60">
             {rounds.map(roundNum => {
-              const isEvenRound = roundNum % 2 === 0;
+              let isReversed = false;
+              if (draftType === 'standard') {
+                isReversed = roundNum % 2 === 0;
+              } else {
+                // 3rd Round Reversal (3RR)
+                if (roundNum === 1) isReversed = false;
+                else if (roundNum === 2) isReversed = true;
+                else isReversed = roundNum % 2 !== 0; // Round 3, 5, 7, 9... reversed
+              }
 
               return (
                 <tr key={roundNum} className="hover:bg-slate-800/20">
                   <td className="p-2 text-slate-500 font-bold font-sans">
                     R{roundNum}
+                    {draftType === '3rr' && roundNum === 3 && (
+                      <span className="block text-[8px] text-amber-400 font-bold">3RR</span>
+                    )}
                   </td>
 
                   {teams.map(teamNum => {
-                    // In a snake draft:
-                    // Odd round: Team 1 -> 12
-                    // Even round: Team 12 -> 1
-                    const pickInRound = isEvenRound ? totalTeams - teamNum + 1 : teamNum;
+                    const pickInRound = isReversed ? totalTeams - teamNum + 1 : teamNum;
                     const overallPickNumber = (roundNum - 1) * totalTeams + pickInRound;
                     const pick = pickMap.get(overallPickNumber);
                     const isCurrent = overallPickNumber === currentPick;

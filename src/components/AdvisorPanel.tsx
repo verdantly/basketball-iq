@@ -8,6 +8,7 @@ interface AdvisorPanelProps {
   punts: PuntState;
   currentPick: number;
   leagueSize: number;
+  draftType?: 'standard' | '3rr';
   onDraftPlayer: (player: Player) => void;
   comparedPlayers: Player[];
   onClearCompare: () => void;
@@ -20,6 +21,7 @@ export const AdvisorPanel: React.FC<AdvisorPanelProps> = ({
   punts,
   currentPick,
   leagueSize,
+  draftType = '3rr',
   onDraftPlayer,
   comparedPlayers,
   onClearCompare,
@@ -61,6 +63,7 @@ export const AdvisorPanel: React.FC<AdvisorPanelProps> = ({
           puntedCategories: activePunts,
           currentPickNumber: currentPick,
           leagueSize,
+          draftType,
         }),
       });
 
