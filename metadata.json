@@ -1,0 +1,9 @@
+{
+  "name": "Hardwood IQ — Yahoo 9-Cat Fantasy Basketball AI Draft War Room",
+  "description": "Real-time AI draft assistant for Yahoo 9-Category Head-to-Head fantasy basketball with live draft board vision, dynamic punt rankings, and expert pick advice.",
+  "requestFramePermissions": [
+    "camera",
+    "display-capture"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
